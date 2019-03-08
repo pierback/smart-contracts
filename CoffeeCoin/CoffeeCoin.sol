@@ -1,6 +1,7 @@
 pragma solidity >=0.4.22<0.6.0;
 
 contract CoffeeCoin {
+  uint constant initialCredit = 1000000000000000;
   struct Account {
     uint256 balance;
     bool initialCredit;
@@ -40,7 +41,7 @@ contract CoffeeCoin {
   function transfer(address to, uint256 tokens) public returns (bool success) {
     if (!accounts[msg.sender].initialCredit) {
       setInitialCredit();
-      approve(msg.sender, 20);
+      approve(msg.sender, initialCredit);
     }
 
     require(accounts[msg.sender].balance >= tokens);
@@ -65,7 +66,7 @@ contract CoffeeCoin {
   {
     if (!accounts[msg.sender].initialCredit) {
       setInitialCredit();
-      approve(msg.sender, 20);
+      approve(msg.sender, initialCredit);
     }
 
     require(tokens <= accounts[from].balance);
@@ -80,7 +81,7 @@ contract CoffeeCoin {
   }
 
   function setInitialCredit() private {
-    accounts[msg.sender].balance = 1000000000000000;
+    accounts[msg.sender].balance = initialCredit;
     accounts[msg.sender].initialCredit = true;
   }
 
