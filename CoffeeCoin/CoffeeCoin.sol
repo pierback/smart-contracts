@@ -23,7 +23,7 @@ contract CoffeeCoin {
     chairAddress = _chairAddress;
     setWaterPrice(cp);
     setCoffeePrice(mp);
-    setWaterPrice(wp);
+    setMatePrice(wp);
   }
 
   function payCoffee() public returns (bool success) {
