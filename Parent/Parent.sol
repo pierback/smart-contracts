@@ -1,39 +1,38 @@
 pragma solidity >=0.4.22<0.6.0;
 
-import "./UserController.sol";
-import "./UserStorage.sol";
+import "./BeverageListInterface.sol";
+import "./DataStorage.sol";
 
 contract Parent {
-  mapping(bytes32 => address) public controllers;
-  address pubController;
+  event BeverageListCreated(address beverageList, uint now);
+  event BeverageListUpgraded(address beverageList, uint now);
 
-  function createUserController() public {
-    UserStorage userStorage = new UserStorage();
-    UserController userController = new UserController(address(userStorage));
-    pubController = address(userController);
+  mapping(bytes32 => address) public beverageLists;
+
+  function registerBeverageList(bytes32 key_, address bvgrlAddress) external {
+    DataStorage dataStorage = new DataStorage();
+    // Set the calling user as the first colony admin
+
+    BeverageListInterface(bvgrlAddress).setDataStorage(address(dataStorage));
+
+    beverageLists[key_] = bvgrlAddress;
+    // BeverageListCreated(bvgrlAddress, now);
   }
 
-  function getUserController() public view returns (address) {
-    return pubController;
+  function getBeverageList(bytes32 key_) private view returns (address) {
+    return beverageLists[key_];
   }
 
-  function ready() public view returns (string memory) {
-    return UserController(pubController).ready();
-  }
+  function upgradeBeverageList(bytes32 key_, address newOrgAddress) external {
+    address dataStorage = BeverageListInterface(
+      getBeverageList(key_)
+    ).getDataStorage();
 
-  function setTodo(string memory td) public {
-    return UserController(pubController).setTodo(td);
-  }
+    BeverageListInterface(newOrgAddress).setDataStorage(dataStorage);
 
-  function upgradeOrganisation(bytes32 key_) public {
-    address ucAddress = controllers[key_];
-    UserController userController = UserController(ucAddress);
-    address userStorage = userController.userStorage();
+    // beverageList.kill(newOrgAddress);
 
-    UserController userControllerNew = new UserController(userStorage);
-
-    //userController.kill(userControllerNew);
-
-    controllers[key_] = address(userControllerNew);
+    beverageLists[key_] = newOrgAddress;
+    // BeverageListUpgraded(newOrgAddress, now);
   }
 }
