@@ -3,7 +3,7 @@ pragma solidity >=0.4.22<0.6.0;
 import "./CoffeeCoinInterface.sol";
 import "./TokenStorage.sol";
 
-contract Parent {
+contract CoffeCoinParent {
   event CoffeCoinCreated(address coffeeCoin, uint now);
   event CoffeCoinUpgraded(address coffeeCoin, uint now);
 
