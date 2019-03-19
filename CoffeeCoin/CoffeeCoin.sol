@@ -3,6 +3,7 @@ pragma solidity >=0.4.22<0.6.0;
 import './TokenStorage.sol';
 
 contract CoffeeCoin {
+  TokenStorage public tokenStorage;
   uint constant initialCredit = 1000000000000000;
 
   struct Account {
@@ -17,22 +18,17 @@ contract CoffeeCoin {
   uint256 private waterPrice;
 
   mapping(address => Account) public accounts;
-  mapping(address => mapping(address => uint256)) public allowed;
-
-  TokenStorage public tokenStorage;
-
-  constructor(address _chairAddress, uint256 cp, uint256 mp, uint256 wp)
-    public
-    payable
-  {
-    chairAddress = _chairAddress;
-    setWaterPrice(cp);
-    setCoffeePrice(mp);
-    setMatePrice(wp);
-  }
+  mapping(address => mapping(address => uint256)) public allowed;  
 
   function setTokenStorage(address _tokenStorage) external {
-    dataStorage = TokenStorage(_tokenStorage);
+    tokenStorage = TokenStorage(_tokenStorage);
+  }
+
+  function seInitValues(address _chairAddress, uint256 cp, uint256 mp, uint256 wp) external {
+    chairAddress = _chairAddress;
+    setWaterPrice(wp);
+    setCoffeePrice(cp);
+    setMatePrice(mp);
   }
 
   function getTokenStorage() external view returns (address) {
@@ -50,13 +46,17 @@ contract CoffeeCoin {
   function payMate() public returns (bool success) {
     return transfer(chairAddress, matePrice);
   }
+  
+  function initCreditSet() public view returns (bool success) {
+      bool initCredit = tokenStorage.getBooleanValue(creaditKey(msg.sender));
+      return initCredit;
+  }
 
   function transfer(address to, uint256 tokens) public returns (bool success) {
-    bool initialCredit = tokenStorage.getBooleanValue(balanceKey(msg.sender));
-    uint senderTokenBalance = TokenStorage.getUIntValue(balanceKey(msg.sender));
-    uint receiverTokenBalance = TokenStorage.getUIntValue(balanceKey(to));
+    uint senderTokenBalance = tokenStorage.getUIntValue(balanceKey(msg.sender));
+    uint receiverTokenBalance = tokenStorage.getUIntValue(balanceKey(to));
     
-    if (!initialCredit) {
+    if (!initCreditSet()) {
       setInitialCredit();
     }
 
@@ -64,8 +64,10 @@ contract CoffeeCoin {
 
     // accounts[msg.sender].balance -= tokens;
     // accounts[to].balance += tokens;
-    tokenStorage.setUIntValue(balanceKey(msg.sender), sednderTokenBalance-tokens);
-    tokenStorage.setUIntValue(balanceKey(to), receiverTokenBalance+tokens);
+    uint newSenderBalance = senderTokenBalance - tokens;
+    uint newReceiverBalance = receiverTokenBalance + tokens;
+    tokenStorage.setUIntValue(balanceKey(msg.sender), newSenderBalance);
+    tokenStorage.setUIntValue(balanceKey(to), newReceiverBalance);
 
     return true;
   }
@@ -75,26 +77,25 @@ contract CoffeeCoin {
     returns (bool success)
   {
     // allowed[msg.sender][spender] = tokens;
-    tokenStorage.setUIntValue(allowedUsrKey(), tokens);
+    tokenStorage.setUIntValue(allowedUsrKey(msg.sender, spender), tokens);
     
     return true;
   }
 
   function allowedUsrKey(address from, address to) internal pure returns (bytes32) {
-    return keccak256(from, to);
+    return keccak256(abi.encode(from, to));
   }
 
   function transferFrom(address from, address to, uint tokens)
     public
     returns (bool success)
   {
-    bool initialCredit = tokenStorage.getBooleanValue(balanceKey(msg.sender));
     uint fromTokenBalance = tokenStorage.getUIntValue(balanceKey(msg.sender));
     uint receiverTokenBalance = tokenStorage.getUIntValue(balanceKey(to));
 
-    uint allowedTokens = tokenStorage.getUIntValue(allowedUsrKey());
+    uint allowedTokens = tokenStorage.getUIntValue(allowedUsrKey(from, to));
 
-    if (!initialCredit) {
+    if (!initCreditSet()) {
       setInitialCredit();
       approve(msg.sender, initialCredit);
     }
@@ -104,28 +105,37 @@ contract CoffeeCoin {
 
 
     //allowed[from][msg.sender] -= tokens;
-    tokenStorage.setUIntValue(allowedUsrKey(), allowedTokens-tokens);
+    uint newAllowedBalance = allowedTokens - tokens;
+    tokenStorage.setUIntValue(allowedUsrKey(from, to), newAllowedBalance);
 
     //accounts[msg.sender].balance -= tokens;
     //accounts[to].balance += tokens;
-    tokenStorage.setUIntValue(balanceKey(msg.sender), fromTokenBalance-tokens);
-    tokenStorage.setUIntValue(balanceKey(to), receiverTokenBalance+tokens);
+    uint newFromBalance = fromTokenBalance - tokens;
+    uint newReceiverBalance = receiverTokenBalance + tokens;
+    tokenStorage.setUIntValue(balanceKey(msg.sender),newFromBalance);
+    tokenStorage.setUIntValue(balanceKey(to), newReceiverBalance);
 
     return true;
   }
 
-  function setInitialCredit() internal {
+  function setInitialCredit() public {
     // accounts[msg.sender].balance = initialCredit;
     // accounts[msg.sender].initialCredit = true;
 
-    tokenStorage.setBooleanValue(balanceKey(msg.sender), true);
+    tokenStorage.setBooleanValue(creaditKey(msg.sender), true);
     tokenStorage.setUIntValue(balanceKey(msg.sender), initialCredit);
   }
 
-  function balanceKey(address usr) internal pure returns (bytes32) {
-    bytes32 fromKey = keccak256(abi.encodePacked(usr, 'balance'));
+  function balanceKey(address usr) public pure returns (bytes32) {
+    bytes32 fromKey = keccak256(abi.encode(usr, 'balance'));
     return fromKey;
   }
+  
+  function creaditKey(address usr) public pure returns (bytes32) {
+    bytes32 fromKey = keccak256(abi.encode(usr, 'credit'));
+    return fromKey;
+  }
+  
 
   function balanceOf(address tokenOwner) external view returns (uint balance) {
     return accounts[tokenOwner].balance;
@@ -148,10 +158,10 @@ contract CoffeeCoin {
 
   function getWaterPrice() public view returns (uint256) {
     // return waterPrice;
-    return tokenStorage.setUIntValue(waterKey());
+    return tokenStorage.getUIntValue(waterKey());
   }
 
-  function waterKey() interanl pure returns (bytes32){
+  function waterKey() internal pure returns (bytes32){
     return keccak256('waterprice');
   }
 
@@ -165,7 +175,7 @@ contract CoffeeCoin {
     return tokenStorage.getUIntValue(mateKey());
   }
 
-  function mateKey() interanl pure returns (bytes32){
+  function mateKey() internal pure returns (bytes32){
     return keccak256('mateprice');
   }
 
@@ -179,7 +189,7 @@ contract CoffeeCoin {
     return tokenStorage.getUIntValue(coffeeKey());
   }
  
-  function coffeeKey() interanl pure returns (bytes32){
+  function coffeeKey() internal pure returns (bytes32){
     return keccak256('coffeeprice');
   }
 }

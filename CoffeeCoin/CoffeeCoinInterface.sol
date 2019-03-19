@@ -1,8 +1,8 @@
 pragma solidity >=0.4.22<0.6.0;
 
 contract CoffeeCoinInterface {
-  function setDataStorage(address _dataStorage) external;
-  function getDataStorage() external view returns (address);
+  function setTokenStorage(address _dataStorage) external;
+  function getTokenStorage() external view returns (address);
 
   function transfer(bytes32 time, bytes32 _drink, bytes32 _wd) public;
   function transferFrom(address from, address to, uint tokens) public;

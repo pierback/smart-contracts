@@ -1,6 +1,6 @@
 pragma solidity >=0.4.22<0.6.0;
 
-contract DataStorage {
+contract TokenStorage {
   
   mapping(bytes32 => uint) UIntStorage;
 

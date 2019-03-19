@@ -3,7 +3,7 @@ pragma solidity >=0.4.22<0.6.0;
 import "./CoffeeCoinInterface.sol";
 import "./TokenStorage.sol";
 
-contract CoffeCoinParent {
+contract CoffeeCoinParent {
   event CoffeCoinCreated(address coffeeCoin, uint now);
   event CoffeCoinUpgraded(address coffeeCoin, uint now);
 
@@ -13,7 +13,7 @@ contract CoffeCoinParent {
     TokenStorage tokenStorage = new TokenStorage();
     // Set the calling user as the first colony admin
 
-    CoffeCoinInterface(bvgrlAddress).setTokenStorage(address(tokenStorage));
+    CoffeeCoinInterface(bvgrlAddress).setTokenStorage(address(tokenStorage));
 
     coffeeCoins[key_] = bvgrlAddress;
     // CoffeCoinCreated(bvgrlAddress, now);
@@ -24,11 +24,11 @@ contract CoffeCoinParent {
   }
 
   function upgradeCoffeCoin(bytes32 key_, address newOrgAddress) external {
-    address tokenStorage = CoffeCoinInterface(
+    address tokenStorage = CoffeeCoinInterface(
       getCoffeCoin(key_)
     ).getTokenStorage();
 
-    CoffeCoinInterface(newOrgAddress).setTokenStorage(tokenStorage);
+    CoffeeCoinInterface(newOrgAddress).setTokenStorage(tokenStorage);
 
     // coffeeCoin.kill(newOrgAddress);
 
